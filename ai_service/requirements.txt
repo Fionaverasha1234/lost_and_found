@@ -2,3 +2,4 @@ flask
 sentence-transformers
 Pillow
 numpy
+gunicorn
