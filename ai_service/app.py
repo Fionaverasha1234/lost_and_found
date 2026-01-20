@@ -5,7 +5,14 @@ import io
 import numpy as np
 
 app = Flask(__name__)
-model = SentenceTransformer("clip-ViT-B-32")
+
+_model = None
+
+def get_model():
+    global _model
+    if _model is None:
+        _model = SentenceTransformer("clip-ViT-B-32")
+    return _model
 
 
 @app.get("/health")
@@ -17,6 +24,7 @@ def health():
 def embed():
     if "image" not in request.files:
         return jsonify({"error": "missing image"}), 400
+
     file = request.files["image"]
     if not file:
         return jsonify({"error": "invalid image"}), 400
@@ -26,7 +34,9 @@ def embed():
     except Exception:
         return jsonify({"error": "unable to read image"}), 400
 
+    model = get_model()  # model loads ONLY when /embed is called
     embedding = model.encode(image)
+
     vec = np.array(embedding, dtype=np.float32)
     norm = np.linalg.norm(vec)
     if norm > 0:
@@ -36,10 +46,3 @@ def embed():
         "model": "clip-ViT-B-32",
         "embedding": vec.tolist()
     })
-
-
-
-if __name__ == "__main__":
-    import os
-    port = int(os.environ.get("PORT", 5001))
-    app.run(host="0.0.0.0", port=port, debug=False)
